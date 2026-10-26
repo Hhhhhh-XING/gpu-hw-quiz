@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no,email=no">
+<title>GPU 硬件模拟题</title>
+<style>
+:root {
+  --ink: #241c16;
+  --muted: #6d6256;
+  --paper: #efe4d2;
+  --card: #fffaf3;
+  --line: #e3d3bc;
+  --red: #9d1c2b;
+  --green: #1d6b3a;
+  --gold: #c4a574;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body {
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+button, input { font-family: inherit; }
+button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.app {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 880px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+.top {
+  background: var(--ink);
+  color: #f6efe4;
+  padding: 14px 16px 12px;
+  padding-top: calc(14px + env(safe-area-inset-top));
+}
+.top b { display: block; font-size: 18px; letter-spacing: 0.04em; }
+.top span { display: block; margin-top: 4px; color: var(--gold); font-size: 12px; }
+.main { flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; padding: 14px 14px 8px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(36, 28, 22, 0.04);
+}
+.kicker { color: var(--red); font-size: 13px; font-weight: 700; letter-spacing: 0.08em; }
+h1 { font-size: 28px; line-height: 1.25; margin: 8px 0; }
+.lead, .note { color: var(--muted); font-size: 14px; line-height: 1.65; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.chip, .ghost, .go, .opt {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+.chip { padding: 8px 12px; font-size: 14px; }
+.chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.modes { display: flex; gap: 8px; margin: 8px 0 14px; }
+.mode {
+  flex: 1;
+  text-align: left;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+}
+.mode b { display: block; margin-bottom: 4px; }
+.mode small { color: var(--muted); line-height: 1.45; }
+.mode.on { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
+.row { display: flex; gap: 8px; align-items: center; margin: 8px 0 14px; font-size: 14px; }
+.go, .ghost {
+  min-height: 48px;
+  padding: 0 16px;
+  font-size: 16px;
+}
+.go { background: var(--red); color: #fff; border-color: var(--red); flex: 1.4; }
+.ghost { background: #fff; flex: 1; }
+.dock {
+  display: flex;
+  gap: 8px;
+  flex: none;
+  padding: 10px 14px calc(16px + env(safe-area-inset-bottom));
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+}
+.progress { height: 4px; background: #e5d8c4; }
+.progress i { display: block; height: 100%; background: var(--red); width: 0; }
+.meta { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+.stem { font-size: 18px; line-height: 1.55; margin: 0 0 12px; }
+.opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 12px;
+  margin: 0 0 8px;
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 52px;
+}
+.opt .L {
+  display: inline-block;
+  width: 1.6em;
+  font-weight: 700;
+}
+.opt:active { transform: scale(0.99); }
+.opt.picked { border-color: var(--ink); background: #f6ecdc; }
+.opt.good { border-color: var(--green); background: #e7f6ec; }
+.opt.bad { border-color: var(--red); background: #fdecea; }
+.opt:disabled { cursor: default; }
+.explain {
+  margin-top: 8px;
+  border-left: 4px solid var(--red);
+  background: #fff;
+  padding: 12px 12px 4px;
+  white-space: pre-wrap;
+  line-height: 1.65;
+  font-size: 15px;
+}
+.explain h3 { margin: 0 0 6px; font-size: 15px; color: var(--red); }
+.score { font-size: 42px; margin: 6px 0; }
+.score small { font-size: 16px; color: var(--muted); }
+.item { border-top: 1px solid var(--line); padding: 12px 0; }
+.item p { margin: 6px 0; line-height: 1.55; }
+.hide { display: none; }
+.qr { width: 180px; height: 180px; background: #fff; padding: 8px; border: 1px solid var(--line); }
+body.pc .stem { font-size: 20px; }
+body.wx .stem { font-size: 18px; }
+body.wx .opt { font-size: 17px; min-height: 56px; }
+</style>
+</head>
+<body class="wx">
+<div class="app">
+  <header class="top">
+    <b>GPU 硬件模拟题</b>
+    <span id="sub">手机浏览器打开 · 任意网络都能点选</span>
+  </header>
+  <div class="progress" id="bar"><i id="bari"></i></div>
+  <main class="main" id="main"></main>
+  <footer class="dock hide" id="dock"></footer>
+</div>
+<script>
+const BANK = [{"ch": "链路", "src": "1.2、4.1、4.2", "stem": "PCIe 5.0 和 6.0 的速率、调制和奈奎斯特，哪一种说法和笔记一致？", "opts": ["5.0 是 32 GT/s NRZ，6.0 是 64 GT/s PAM4。两代都是 32 Gbaud、UI 31.25 ps，奈奎斯特都是 16 GHz", "6.0 速率翻倍，所以奈奎斯特变成 32 GHz，符号率变成 64 Gbaud", "两代都是 NRZ。6.0 只是把端到端插损从 36 dB 改成 32 dB，符号率不变这个说法是错的", "6.0 每个符号 2 bit，所以 UI 变成 15.625 ps，奈奎斯特仍按 64 GHz 来布线"], "ans": 0, "why": "【答案】A。奈奎斯特看的是符号率，不是每秒比特数。两代都是 32 Gbaud，一半就是 16 GHz，UI 都是 31.25 ps。6.0 用 PAM4，一个符号带 2 bit，线速率才写成 64 GT/s。线距、参考平面、背钻和耦合电容仍沿用 16 GHz 那套。\n【易错】B 把奈奎斯特当成线速率的一半。C 漏了 PAM4。D 把 UI 按 64 GT/s 的比特周期去算，笔记里的 UI 仍是 31.25 ps。"}, {"ch": "链路", "src": "1.2、4.1", "stem": "PCIe 5.0 在 16 GHz 的端到端 36 dB，笔记里怎么拆？", "opts": ["Root 封装 8.5 dB，主板 16 dB，连接器 0.75 dB，AIC 9.5 dB", "Root 封装 9.0 dB，主板走线 16.0 dB，CEM 连接器 1.5 dB，AIC 9.5 dB。AIC 里含对端封装 4.0 dB", "四段都是 9 dB，连接器另加 1.5 dB，合计超过 36 dB 也合格", "主板 16 dB 是 9 inch MEGTRON 6 的损耗，可以直接用 0.336 dB/inch 乘长度来代替这 16 dB"], "ans": 1, "why": "【答案】B。9.0 + 16.0 + 1.5 + 9.5 = 36 dB，频率点都是 16 GHz。AIC 的 9.5 dB 含金手指、子卡走线和 4.0 dB 对端封装。串扰还要再留 4 dB 到 5 dB，温湿度再留 2 dB 到 3 dB，这两笔是余量，不在 36 dB 里面。\n【易错】A 把 6.0 的 8.5 dB 和 0.75 dB 套进 5.0。C 把四段加爆了。D：表 2-1 的主板 16 dB 对应 9 inch 高损耗材料，不是 MEGTRON 6 的 0.336 dB/inch 乘出来的。"}, {"ch": "链路", "src": "4.2、1.4", "stem": "做到 PCIe 6.0 子卡时，哪一组数字可以同时成立？", "opts": ["端到端仍用 36 dB，子卡仍用 9.5 dB，金手指几何沿用 5.0，卡功率提高到 800 W", "端到端 32 dB，子卡 8.5 dB，连接器限值 0.75 dB。金手指改窄并相对 5.0 向卡内下移约 0.5 mm。卡功率上限仍是 675 W", "连接器 0.75 dB 要再加到 32 dB 上，签核按 32.75 dB", "5.0 按 9.5 dB 做出来的卡，插损自动满足 6.0 的 8.5 dB 子卡预算"], "ans": 1, "why": "【答案】B。6.0 端到端收到 32 dB @ 16 GHz。AIC 从金手指顶部到硅片焊盘是 8.5 dB，白皮书例子里对端封装约 4.6 dB，剩下约 3.9 dB 给走线、过孔和发送端电容。连接器在 16 GHz 的限值是 0.75 dB，公式 (−0.1 − 0.040625×f)。0.75 dB 只做连接器通过限值，不再加到 32 dB 上。6.0 没有把槽供电加大，上限仍是 675 W。\n【易错】A 沿用了 5.0 的预算和手指。C 重复加了连接器。D 和笔记相反：按 5.0 的 9.5 dB 做出来的卡会超过 6.0 子卡预算。"}, {"ch": "链路", "src": "4.1、4.2", "stem": "笔记里出现两个“23.5 dB”。哪一种用法没有把它们混成同一个数？", "opts": ["Gen3 端到端合计是 23.5 dB，这是整条链路。6.0 的 Root 侧约 23.5 dB，减去主板、过孔和交流电容约 15.7 dB，得到 7.8 dB，用来盖住 Root 封装，不是规范另列的一行", "Gen3 的 23.5 dB 就是 6.0 Root 侧预算，主板可以按这个数布 16 GHz", "6.0 的 7.8 dB 是连接器规范单独写的一行，要和 0.75 dB 相加后再去对 32 dB", "Gen4 端到端也是 23.5 dB，Gen3 才是 28 dB"], "ans": 0, "why": "【答案】A。Gen3 的 23.5 dB 是整条链路的合计。6.0 白皮书里的约 23.5 dB 只是系统一侧。23.5 − 15.7 = 7.8，这 7.8 dB 是两笔相减，用来盖住 Root 封装。连接器 0.75 dB 算进哪一笔，白皮书和 CEM 幻灯没有写成同一笔，签核时跟所打开的 CEM 6.0 通道图。\n【易错】B 把两代的 23.5 当成同一个预算。C 把相减结果当成规范另列的连接器行。D 把 Gen4 和 Gen3 对调了：Gen4 端到端是 28 dB。"}, {"ch": "链路", "src": "1.2、2.2", "stem": "一条 PCIe 5.0 x16 的单向带宽，笔记里的算法是哪一个？", "opts": ["32 GT/s × 16 / 8 = 64 GB/s，编码效率不用乘", "32 GT/s 先按 8b/10b，再乘 16 条 lane，得到约 51.2 GB/s", "32 × 128/130 得到单 lane 约 31.51 Gb/s，x16 单向是 63.0 GB/s", "有效带宽按 256 B FLIT 的 92% 来乘，x16 单向约 118 GB/s"], "ans": 2, "why": "【答案】C。5.0 编码是 128b/130b，有效带宽 = 32 × 128/130。单 lane 31.51 Gb/s，约 3.94 GB/s；x16 单向 63.0 GB/s。同步头和加扰不纠错。\n【易错】A 没乘 128/130。B 用了 2.5/5.0 GT/s 的 8b/10b，8 GT/s 及以上才是 128b/130b。D 是 6.0 只计 TLP 的 x16 单向 118 GB/s。"}, {"ch": "链路", "src": "1.2、4.2", "stem": "PCIe 6.0 的 256 B FLIT 怎么拆，TLP 效率是多少？", "opts": ["256 B 全是 TLP，效率 100%，单 lane 有效载荷按 64 Gb/s 计", "236 B TLP + 6 B DLP + 8 B CRC + 6 B FEC。TLP 效率 236/256 = 92%。单 lane 只计 TLP 为 59.0 Gb/s，约 7.38 GB/s，x16 单向 118 GB/s", "236 B 里已经含 FEC，CRC 另有 16 B，所以效率高于 92%", "6.0 仍用 LCRC 发现错误后 NAK 整包重传，FLIT 里不放 FEC"], "ans": 1, "why": "【答案】B。64 GT/s × 236/256 = 59.0 Gb/s，这是只计 TLP 的单 lane 载荷。x16 单向 118 GB/s。FEC 前 FBER 是 10⁻⁶，CRC 失败则 FLIT 重放。\n【易错】A 把开销当成载荷。C 把 236 B 和 FEC 重复计算。D 是 5.0 的做法：无 FEC，BER 10⁻¹²，LCRC 失败后 NAK。"}, {"ch": "链路", "src": "4.1", "stem": "Gen5 均衡后的眼，以及插损、回损、串扰各吃眼的哪一部分？", "opts": ["眼高 25 mV，眼宽 0.3 UI 即 37.5 ps。插损吃眼宽，回损吃眼高", "眼高 15 ± 1.5 mV，眼宽 0.3 UI 即 18.75 ± 0.55 ps。串扰主要吃眼宽", "眼高 15 ± 1.5 mV，眼宽 0.3 UI 即 9.375 ± 0.5 ps，在均衡之后、3 抽头 DFE 之前量。插损吃眼高，回损吃眼宽，串扰吃眼高", "Gen3、Gen4、Gen5 的 0.3 UI 都等于 9.375 ps"], "ans": 2, "why": "【答案】C。Gen5 的 0.3 UI 就是 9.375 ps，容差 ±0.5 ps。Gen3 眼高 25 mV、眼宽 37.5 ps；Gen4 眼高同样 15 ± 1.5 mV，眼宽是 18.75 ± 0.55 ps。对内 skew 会让眼高和眼宽一起收，对内差按 4.1 的 5 mil。残桩长于 15 mil 要背钻。\n【易错】A 用了 Gen3 的眼，又把插损和回损的作用对调。B 用了 Gen4 的眼宽。D 把三代的 0.3 UI 都换成 Gen5 的皮秒数。"}, {"ch": "链路", "src": "4.1、5.0 和 6.0 的板级时序", "stem": "PERST# 和 REFCLK 的板级时间，哪一组是笔记采用的下限？", "opts": ["TPVPERL、TPERST-CLK、TPERST 都至少 100 ms。PERST# 为低时，卡应把 CLKREQ# 放开，让主机停钟", "TPVPERL 至少 100 ms；TPERST-CLK 和 TPERST 都至少 100 µs。REFCLK 先稳定，再过至少 100 µs 才释放 PERST#。PERST# 为低时，卡不得把 CLKREQ# 放开", "时钟可以比 PERST# 释放晚 100 µs，因为 TPERST-CLK 只约束复位脉冲宽度", "下游口要在 1 ms 内开始均衡、为均衡改速率不受 200 ms 限制。这两笔就是 PERST# 的时间"], "ans": 1, "why": "【答案】B。电源进窗口后再等至少 100 ms 才释放 PERST#。这段 TPVPERL 里面，还要先满足时钟已稳定至少 100 µs。PERST# 一旦拉低，至少保持 100 µs，并且相对 REFCLK 异步。PERST# 为低时 LTSSM 还没开始。TFAIL 的纳秒数这次表文粘在一起，笔记不写死。\n【易错】A 把微秒写成毫秒，并且把 CLKREQ# 的方向说反了。C 把时钟和复位的先后说反。D 是 Base 6.0 训练里的 1 ms 和 200 ms，笔记写明它们不是 PERST# 的时间。"}, {"ch": "链路", "src": "5.0 训练状态、6.0 训练状态", "stem": "PERST# 释放之后，链路训练的入口哪一种说法成立？", "opts": ["从 Detect 开始，速率是 2.5 GT/s。第一次进入的 L0 仍是 2.5 GT/s，再经 Recovery 升速。6.0 要先在 32 GT/s 做完 128b/130b 均衡，才能进 64 GT/s", "释放 PERST# 后直接以 32 GT/s 进 Detect，第一次 L0 就是目标速率", "Polling.Active 的 1024 个 TS1、8 个连续、24 ms，以及 Polling.Configuration 的 48 ms，就是 CEM 表里的 TPVPERL", "2.5 GT/s 用 128b/130b，32 GT/s 用 8b/10b。极性反了必须改走线，训练不能吸收"], "ans": 0, "why": "【答案】A。没有对端端接就留在 Detect。Polling 仍是 2.5 GT/s。2.5 和 5.0 GT/s 用 8b/10b；8、16、32 GT/s 用 128b/130b。64 GT/s 的 L0 传 256 B FLIT。Shane Colton 写的 1024 个 TS1、8 个连续、24 ms 和 48 ms 是 Polling 讲解，签核以所打开的 Base 5.0 第 4.2 节为准，不要当成 PERST# 时间。\n【易错】B 跳过了 2.5 GT/s 的入口。C 把训练超时和电源复位时间混成一个符号。D 把编码代际说反了；极性可以反，lane 可以反转，都在训练里完成。"}, {"ch": "链路", "src": "1.3、4.10", "stem": "12V-2x6 的 SENSE0、SENSE1 怎样表示功率档？", "opts": ["600 W 两脚悬空；150 W 两脚都接地。碰到地反而更安全，仍按 150 W 供电", "600 W 是 SENSE0 接地、SENSE1 悬空；450 W 两脚短接；0 W 两脚都接地", "四档都由卡侧用 GPIO 拉出电流来编码，电源线不决定档位", "600 W 两脚都接 GND；450 W 为 SENSE0 悬空、SENSE1 接 GND；300 W 为 SENSE0 接 GND、SENSE1 悬空；150 W 两脚 0 Ω 互连且都不接 GND；0 W 两脚都悬空。150 W 的两脚再碰到 GND，会被读成 600 W"], "ans": 3, "why": "【答案】D。卡侧 SENSE0、SENSE1 各自约 10 kΩ 上拉到 3.3 V。边带脚位是 S1 = CARD_PWR_STABLE，S2 = CARD_CBL_PRES#，S3 = SENSE0，S4 = SENSE1。CARD_CBL_PRES# 在卡上经 4.7 kΩ 接地。CARD_PWR_STABLE 是卡侧开漏，卡上 100 kΩ 下拉，电源侧 4.7 kΩ 上拉到 3.3 V。锁扣到位之后再读 SENSE，对上线缆声明的档位才允许这一档电流。\n【易错】A 把 600 W 和 0 W 对调，还忽略了 150 W 碰地会读成 600 W。B 把 600/450/0 的接法说乱。C 把编码方说反了：编码由电源线决定。"}, {"ch": "链路", "src": "4.11", "stem": "共钟、SRNS、SRIS 怎么区分？REFCLK 在数据眼里起什么作用？", "opts": ["共钟可以只在子卡一侧做 0 到 −0.5% 展频。REFCLK 就是数据眼的采样钟", "SRNS 是两侧都有自己的钟，而且两侧都开展频。独立参考钟下展频最大 −0.5%", "CEM 5.0 插卡用共钟，展频在扇出之前加上，调制 30 kHz 到 33 kHz，下展频 0 到 −0.5%。只在一侧开展频就不能再叫共钟，要按 SRIS。SRNS 是两侧都不开展频。数据钟从码流恢复，REFCLK 不是采样钟", "系统材料里的 150 fs、CEM 那项 200 fs，以及再除以 √2 得到的约 106 fs，是同一条限值的三种写法"], "ans": 2, "why": "【答案】C。SRIS 至少一侧开展频，独立参考钟下展频最大 −0.3%（材料里从 5000 ppm 写成 3000 ppm）。150 fs RMS 是经过 PCIe 滤波函数之后的共钟抖动；4.1 的 200 fs 是 CEM 参考钟随机抖动、100 Ω、无串扰的那一项测试。约 106 fs 是 SRIS 的经验，不是另一条限值。Skyworks 把 Gen1 到 Gen4 写成至少 ±300 ppm，Gen5 至少 ±100 ppm。\n【易错】A 把单侧展频当成共钟，又把参考钟当成采样钟。B 把 SRNS 和 SRIS 对调，展频幅度也用错。D 把三项测试条件收成一个数。"}, {"ch": "链路", "src": "1.4、4.12", "stem": "什么时候留在 CEM，什么时候改 OAM？主机 PCIe 的模组预算用哪个数？", "opts": ["只要速率到 64 GT/s 就改 OAM。OAM 主机口在 16 GHz 按 CEM 子卡 9.5 dB 关闭", "功耗在 675 W 以内可以做 CEM。功耗和加速器互连超过 CEM 时用 OAM 或 SXM。OAM r2.0 主机 PCIe 5.0 和 6.0，从裸片到已配合连接器不超过 8 dB @ 16 GHz。28 GHz、合计 30 dB 是模组之间的例子，不是主机 PCIe", "OAM v1.x 的 12 V 档 TDP 上限是 700 W，48 V 档是 350 W", "r2.0 的 100 A 就是 TDP，所以模组按 100 A × 48 V 做成 4800 W"], "ans": 1, "why": "【答案】B。SXM 扣在 HGX 基板，GPU 之间走 NVLink。v1.x 的 12 V 是 11 V 到 13.2 V、最高 350 W；48 V 或 54 V 在不低于 44 V 时最高 700 W。r2.0 在 44 V 到 59.5 V 时最高 1000 W。P48V 的 100 A 是脚的电流能力，TDP 上限仍是 1000 W。\n【易错】A 用 CEM 子卡预算去关 OAM 模组。C 把 12 V 和 48 V 的瓦数对调。D 把脚的电流能力乘成整机功耗。"}, {"ch": "链路", "src": "4.2 线缆、连接器回损", "stem": "线缆插损和三处 −28 dB / −31 dB 应该怎么用？", "opts": ["线缆插损算进 5.0 主板的 16 dB，或 6.0 Root 侧约 23.5 dB，再加两端封装，总数不超过该代端到端预算。已发布 CEM 6.0 表 6-9 的连接器 iRL 是 −28 dB，工作组幻灯是 −31 dB，线缆研讨会的 −28 dB 是 32 GT/s 线缆组件。三处不要对调", "1 m 线缆按例子换算约 7.4 dB，这个数就是合格线", "OCuLink 可以做到 64 GT/s、2 m。CopprLink 内部是 SFF-8654，最长 2 m", "85 Ω 和 92 Ω 按系列名互换即可，不必看料号栏"], "ans": 0, "why": "【答案】A。CopprLink 内部 SFF-TA-1016，单系统内 1 m；外部 SFF-TA-1032，机架内和机架之间 2 m。OCuLink 停在 8 GT/s，这一档最长 2 m。外部 SFF-8614 在 8/16/32 GT/s 的长度例子是 3 m / 2.5 m / 2 m。7.0 的 128 GT/s 在这套材料里没有发布的铜缆行。SlimSAS 常见 SFF-8654，不在 CopprLink 那一行。\n【易错】B 把研讨会例子里的斜率当成规范合格线。C 把 OCuLink 和 SlimSAS 的速率、连接器写错。D 和 TE 料号栏相反：85 Ω 和 92 Ω 以料号为准。"}, {"ch": "存储器", "src": "4.3", "stem": "LPDDR5 上有人说“CLK 3000、时钟 6000”。按笔记，这组数指什么？", "opts": ["CK 为 3000 MHz，WCK 为 6000 MHz，用 CK:WCK = 1:2。x16 带宽 17.1 GB/s", "这是 DDR5-6000 的说法，LPDDR5 没有 WCK，ZQ 经 240 Ω 接到地", "WCK 为 3000 MHz，DQ 每引脚 6000 Mb/s。速率高于 3200 Mb/s，用 CK:WCK = 1:4，所以 CK 是 750 MHz，CA 采样 1500 Mb/s。x16 通道带宽 12.0 GB/s。ZQ 经 240 Ω ±1% 接到 VDDQ", "8533 Mb/s 的 x16 通道是 8533 × 16 / 8 = 17.1 GB/s，字节之间也要等长"], "ans": 2, "why": "【答案】C。带宽（GB/s）= 引脚速率（Gb/s）× 位宽 / 8。x16 是 2 字节，8533 Mb/s 才是 8533 × 2 / 1000 = 17.1 GB/s。WCK 频率 = 引脚速率 / 2。不超过 3200 Mb/s 用 1:2，更高用 1:4。没有 CKE 脚。字节内 DQ 对 WCK 等长，字节之间、通道之间不做等长。\n【易错】A 把 CK 和 WCK 对调，还用了低速才用的 1:2。B 把 ZQ 的接法说成 DDR5。D 把位宽当成 16 字节去乘，17.1 这个数碰巧对上，算法是错的。"}, {"ch": "存储器", "src": "4.4、存储器怎么测", "stem": "DDR5-6400 和板上的“CLK 3000、时钟 6000”，哪一种对照是对的？", "opts": ["6400 MT/s 时 CK 为 6400 MHz。一次 BL16 在 64 bit 总线上是 64 字节。ZQ 接到 VDDQ", "两个独立的 32 bit 子通道，默认 BL16，一个子通道一次突发正好 64 字节。6400 MT/s 时 CK 为 3200 MHz，64 bit 数据带宽 51.2 GB/s。“CLK 3000、时钟 6000”是 DDR5-6000：CK 3000 MHz，64 bit 带宽 48.0 GB/s。ZQ 是 240 Ω 接到 VSS", "CK 和突发期间的 DQS 频率差一倍。训练失败只看颗粒，不必先读 SPD", "组间窗口颗粒和 DIMM 都是 −50 ps 到 +50 ps"], "ans": 1, "why": "【答案】B。DDR5 的 CK 和突发期间的 DQS 同频，倍率固定为 2。校验位不计入那张带宽表。组间窗口：颗粒 −149 ps 到 +1796 ps，DIMM −150 ps 到 +150 ps。模组要在训练之前读到 SPD Hub，并且 PMIC 报电源好，否则会把电源故障当成训练失败。\n【易错】A 把 CK 频率写成了 MT/s，ZQ 又用成 LPDDR 的接法。C 把 CK 和 DQS 说成差一倍，还跳过了 SPD 和 PMIC。D 用了 LPDDR 命令组的窗口。"}, {"ch": "存储器", "src": "4.5、容易漏掉的工艺和测试", "stem": "HBM3 单堆栈带宽怎么算？板级还能关什么？", "opts": ["6.4 Gb/s × 1024 / 8 = 819 GB/s。DQ 在硅中介层上，板上修不到 DQ 等长。板上能关的是电源、复位、温度，以及片内自测试和 ECC", "1024 bit 是板级通道宽度，按 DDR5 的方法在 PCB 上做字节等长", "9.6 Gb/s 的产品档仍是 819 GB/s，因为位宽减半了", "HBM 和 GDDR 一样，VDDQ 要并进核电压"], "ans": 0, "why": "【答案】A。9.6 Gb/s 的产品档是 9.6 × 1024 / 8 = 1229 GB/s，以该颗粒手册为准。多堆栈的总带宽按堆栈数相加。ASIC 和 HBM 进同一块冷板或风冷盖，TIM 盖住每一颗堆栈。中介层通道和片上 PDN 由封装一起签。\n【易错】B 把堆栈位宽当成 PCB 走线。C 没有重算 9.6 Gb/s。D 是 GDDR 的禁令用反了：GDDR 的 VDD、VDDQ 不并进核电压，HBM 的 DQ 根本不在板上。"}, {"ch": "存储器", "src": "4.6", "stem": "GDDR6、GDDR6X、GDDR7 的速率和调制，哪一条没有串规格？", "opts": ["GDDR6 在 JESD250 里是 PAM4。16 Gb/s、32 bit 时单颗 96 GB/s，引脚速率等于 CK 频率", "GDDR6X 写在 JESD250 里，按 NRZ 关闭，WCK:CK = 4:1", "GDDR7 是 PAM4，32 Gb/s 的奈奎斯特是 16 GHz，和 PCIe 6.0 用同一个数", "GDDR6 是 NRZ，WCK:CK = 2:1，引脚速率是 CK 的 4 倍。16 Gb/s、32 bit 时单颗 64 GB/s。GDDR6X 是厂商 PAM4，不在 JESD250 里；24 Gb/s、32 bit 时单颗 96 GB/s。GDDR7 的 JESD239 用 PAM3，每符号约 1.585 bit，32 Gb/s 约 20.2 Gbaud，奈奎斯特约 10.1 GHz，32 bit 单颗 128 GB/s"], "ans": 3, "why": "【答案】D。GDDR6 两路独立的 16 bit，一共 32 条 DQ，两路分别训练，DQ 相对该路 WCK 等长。256 bit 总线是 8 颗、512 GB/s；384 bit 是 12 颗、768 GB/s。GDDR7 低速可以用 NRZ，高速用 PAM3。VDD、VDDQ 不并进核电压。\n【易错】A 把 GDDR6 说成 PAM4，并把 64 GB/s 换成了 GDDR6X 的 96 GB/s。B 把厂商扩展写进了 JESD250。C 把 PAM3 的符号率当成了 PAM4 的 16 GHz。"}, {"ch": "电源", "src": "4.7、容易漏掉的工艺和测试", "stem": "核电压的电流、负载线和采样点，设计认哪一个？", "opts": ["电流用控制器手册里的最大输出电流。纹波在模块输出脚量，采样球电压只做参考", "I = Pcore / Vcore，电压和功耗只取芯片功耗规格。负载线 V = Vmax − I × RLL。目标阻抗 Z = ΔV / ΔI。测量和设计都认封装采样球，不认模块输出脚。采样要落在高低电压之间", "采样用的 0 Ω 掉了没有关系，调节器仍按采样球的真实电压闭环", "把采样接到电压最高的那颗球，其余球都会被拉进规格"], "ans": 1, "why": "【答案】B。差分采样要避开开关节点。0 Ω 掉了，或采样点接到电压最高的球，调节器会把别的球拉出规格。带宽内靠控制器，带宽外靠板上、封装和片上电容。过压保护要低于芯片绝对最大额定值。\n【易错】A 用控制器手册代替芯片功耗规格，又在错误的点量纹波。C、D 都是笔记点名的采样错误：掉电阻和接到最高球都会把别的球拉出规格。"}, {"ch": "电源", "src": "4.7 多相方案", "stem": "400 A 核电压按 TI 的起点估相数，上电波形应是哪一种？", "opts": ["每相 40 A 时工作 10 相，再留一相故障余量，共 11 相；每相 30 A 时是 14 相加 1 相，共 15 相。整条核电压用一次软启动斜坡，各相在同一次斜坡里交错发波", "400 / 40 = 10，故障余量已经含在这 10 相里，不必再留", "上电按相逐级抬到目标，再打开下一相，这样先开的相不会承担启动电流", "AMD XAPP1375 写的 0.2 ms 到 40 ms 就是 GPU 的斜坡时间，可以直接写进时序"], "ans": 0, "why": "【答案】A。30 A 到 40 A 只是 SLVA882B 的估算起点，连续电流仍用功率级在本板散热下的手册值。常见控制器覆盖 2 到 8 相，12 相及以上要能堆叠。逐相抬电压会把启动电流堆在先开的相上，斜坡中间还会出平台。XAPP1375 的单调升到 95%、0.2 ms 到 40 ms 是自适应 SoC 的要求，不套到 GPU 的时间数字。TPS53681 的 12 A、14 A、16 A、18 A 是减相用的效率点，不是热设计电流。动态减相也不是上电顺序。\n【易错】B 少留了故障相。C 正好是笔记要避开的平台波形。D 把 SoC 的时间拿去当 GPU 规格。"}, {"ch": "电源", "src": "4.7 控制器和功率级", "stem": "MP2965、MP2975、RAA228227、MP87993 的相数和电流，哪一种读法对？", "opts": ["MP2965 选型表写 2 路、10 相，所以可以按 10 相同时出流来配电感。管脚名可以套到 MP2975", "MP2975 的 8 路 PWM 两路可以各自用满 8 相。RAA228227 的 1440 A 可以同时安在 8+8 的两路上", "MP2965 的 Rail 1 最多 7 相、Rail 2 最多 3 相，表上的 10 是上限相加，典型图是 6+1。MP2975 的 8 路 PWM 两路共用，Rail 1 ≤ 8、Rail 2 ≤ 4，两路之和不超过 8。RAA228227 的 1440 A 等于 Rail 1 的 16 × ISL99390 的 90 A，8+8 时两路分开重算。MP87993 连续输出 50 A，100 A 是开关限流", "CSD95410 标题里的 90 A peak continuous 就是热设计连续电流，损耗栏的 30 A 可以不看"], "ans": 2, "why": "【答案】C。MP2965 同时工作的 PWM 按 PWM1 到 PWM7 这 7 个脚计，7 相盖不住按 30 A 到 40 A 估算的 400 A。MP2975 可以配成 8+0、7+1、6+2、5+3 或 4+4，公开渠道没有完整手册，管脚和寄存器不从 MP2965 套过来。英飞凌写明要和自家功率级配对。FDMF3170 的订购状态是 Not Recommended。\n【易错】A 把两路上限相加当成同时出流。B 把共用 PWM 和单路最大电流各用了一次。D 用标题代替损耗例子里的电流。"}, {"ch": "电源", "src": "4.7 通信、SVI", "stem": "PMBus、AVSBus、SVID、SVI 和 IMON，哪一种分工是对的？", "opts": ["快速改压走 PMBus 多点总线。AVSBus 用来给 BMC 写 NVM。IMON 是其中一条数字总线", "PMBus 给 BMC 写配置、读遥测。芯片改核电压用手册指定的快速总线：AVSBus 点对点，1 mV 一步、斜率 1 mV/µs 一步。采样仍在封装采样球，总线不代替远端反馈。IMON 是模拟电流", "SVI2 是两根线、12.5 mV 一步；SVI 是三根线、6.25 mV 一步。SVI3 的 0x00 表示最高电压", "PWM-VID 用占空比报电压之后，就可以拆掉远端采样"], "ans": 1, "why": "【答案】B。SVID 是三根开漏。SVI 是 SVC、SVD，ISL6265A 为 12.5 mV 一步；SVI2 加上 SVT，ISL62773 为 6.25 mV 一步；SVI3 在 coreboot 的译码里是 245 mV + 5 mV × VID，码 0x00 为关闭。RAA229139 的 SVI3 时钟到 50 MHz。AVSBus 满速约 640 ns 改一次电压，PMBus 的 VOUT_MIN、VOUT_MAX 会把可写范围夹住。上电先到 Vboot，Power Good 之后再发 VID。\n【易错】A 把两条总线的主人对调了。C 把 SVI 和 SVI2 的线数、步长对调，0x00 也说反了。D 和笔记相反：占空比只设定基准，环路仍用远端采样。"}, {"ch": "电源", "src": "4.10、1.4", "stem": "槽上的 12 V、3.3 V 和辅助电源，以及热插拔，笔记怎么规定？", "opts": ["三路可以任意顺序上电。任一回路出容差，PERST# 必须为低。槽上 12 V 是 ±8%，3.3 V 是 ±9%。12V-2x6 的 12 V 是 +5%/−8%。x16 软件配置前槽上约 25 W，配置后 75 W。规范定义的受管热插拔只到 75 W，超过的卡按关机更换", "必须先 12 V、再 3.3 V、再辅助电源。出容差也可以保持 PERST# 为高，让训练继续", "12V-2x6 的容差和槽上 12 V 一样，都是 ±8%。48VHPWR 可以插入 12 V 插座，只要对上 600 W", "热插拔定义到 675 W，所以 300 W 的卡也可以按带电更换来设计"], "ans": 0, "why": "【答案】A。金手指电压从第 1 代起就是 12 V（±8%）和 3.3 V（±9%），3.3 Vaux 在支持唤醒时最大 375 mA。供电档位沿用 10 / 25 / 75 / 150 / 225 / 300 W，以及 5.0 起的 675 W。48VHPWR 同样最高 600 W，用于已有 48 V 母排的机架，不能插入 12 V 插座。\n【易错】B 规定了笔记里没有的上电顺序，还允许带病释放复位。C 把两种 12 V 容差合成一个，又允许两种插座互插。D 把卡功率上限和热插拔定义混在一起。自 5.0 起，受管热插拔只到 75 W。"}, {"ch": "电源", "src": "4.10 48 V 母排", "stem": "Open Rack 的 48 V 母排，哪一组数和接地点是笔记里的？", "opts": ["ORV2 标称 48.0 V，工作范围 46 V 到 52 V。回流在每个托盘上再接一次机箱，形成备用路径", "ORV3 只有一档：标称 54.5 V，工作 40 V 到 59.5 V。耐压漏电流按 10 mA", "48 V 母排的电流密度沿用 12 V 那一节的每平方毫米安培数。保持时间按笔记里的 10 ms", "ORV2 标称 +54.5 V，工作 +40 V 到 +59.5 V。回流只在电源架接到机箱，托盘上再接一次会让回流走机箱。耐压 2.4 kV，上升 10 s，保持 10 s，漏电流最大 10 µA。ORV3 选项 1 是 46 V 到 52 V、标称 51 V；选项 2 是 52 V 到 56 V、标称 54 V。这一节没有写 A/mm²，保持时间用该电源的 CRPS"], "ans": 3, "why": "【答案】D。12 V 母排和 48 V 母排的连接器不能互换。功率检测要在连接器完全插入之后才允许接通，拔出之前先断开。底座规范的机箱地 65 A 和接插件页的 64 A 各留在自己的文件里，不要合成一个数。\n【易错】A 用了市电适配器的 48 V 直觉，并把单点接地改成了环路。B 把 ORV2 和 ORV3 合成一档，漏电流也放大了一千倍。C 抄了笔记明确说不要抄的电流密度，还写了本文没有的毫秒数。"}, {"ch": "板材", "src": "4.8", "stem": "M4、M6、M8 和台光 EM-890 应该怎么选，才不算串料号？", "opts": ["M6 的下一档就是 M8。EM-890K 和 M6 同频同含胶量，可以按电气等价替换", "M4、M6、M8 是松下 MEGTRON 的行业叫法，不是 IPC-4101 斜杠表编号。中间还有 MEGTRON 7，所以 M6 的下一档不是 M8。EM-890 的 Df 靠近 M6 的 0.0037 和 0.0046，EM-890K 低于表里两行 M6。两家频率和样品不同，不能当成电气等价。Rogers、Isola 不并进 M 的那一行", "括号里的 (N)、(S)、(K) 只是包装差异，Dk 和 Df 不变", "高速走线用普通铜箔，电源层的铜牙要算进差分对的导体损耗"], "ans": 1, "why": "【答案】B。M6 的 R-5775(N)/(S) 是 Dk 3.34、Df 0.0037 @ 13 GHz；(K)/(G)/(R) 是 Dk 3.62、Df 0.0046。字母不在 UL 注册料号里，但会改变 Dk、Df。EM-890 是 10 GHz、两种含胶量，Df 从 0.0043 到 0.0036。itech 把 EM-890 和 MEGTRON 6 放在极低损耗，把 EM-890K 和 MEGTRON 7 放在超低损耗，这只说明档位，不证明等价。\n【易错】A 跳过了 M7，又把不同频率的 Df 当成同一条曲线。C 忽略了括号字母会改电气参数。D 把铜箔等级用反了：高速层用 HVLP 或 HVLP2，电源层和地层的铜牙不进差分对导体损耗。"}, {"ch": "板材", "src": "4.8 铜箔、板厚、怎么测", "stem": "铜箔、阻抗和成品板厚，哪一项可以作为签核依据？", "opts": ["三井 HVLP 的 HS-VSP 代表值 Rz 1.0 µm，HVLP2 的 HS2-VSP 是 2.5 µm。阻抗用 RO4350B 的工艺 Dk 3.48 来计算", "CEM 金手指处成品板厚 1.57 mm ± 0.13 mm。超微 HL-325L 的 185 mil 可以代替 OAM v1.5 的 1.57 mm 到 3.20 mm。仿真眼对不上实测也可以先投板", "同一条链路只用一个差分阻抗，常见 85 Ω 或 100 Ω。RO4350B 算阻抗用设计 Dk 3.66，来料核对用工艺 Dk 3.48 ± 0.05。HVLP2 的 HS2-VSP 代表值 Rz 1.0 µm，HVLP 的 HS1-VSP 是 1.5 µm、HS-VSP 是 2.5 µm。仿真和 VNA、TDR 对不上，不作为投板依据。背钻残桩看首件切片", "OAM r2.0 打开的文本重印了 1.57 mm 到 3.20 mm，板厚不用再核对连接器的 0.15 mm 配合"], "ans": 2, "why": "【答案】C。这些 Rz 是路线图上的代表值，不是保证值。层数增加时用更薄的芯板和半固化片把总厚收进连接器窗口，不靠加厚单张芯板。OAM v1.1/v1.5 是 1.57 mm 到 3.20 mm、公差 ±10%，外形 102 mm × 165 mm。r2.0 外形改为 102 mm × 170 mm，这次打开的文本没有再印 1.57–3.20 mm。HL-325L 的 185 mil（4.7 mm）只是这一颗模组。\n【易错】A 把两种铜箔的 Rz 对调，又用工艺 Dk 去算阻抗。B 拿一颗模组的厚度代替规范范围，还允许仿真单独放行。D 和 r2.0 原文相反。"}, {"ch": "服务器", "src": "3.1、3.2、1.1", "stem": "Root Complex 和 Root Port 是什么关系？接口控制文档一行里要写哪八项？", "opts": ["一个 RC 只有一个 RP。文档只写速率和功耗，带宽另页再对", "RC 是整棵树的根。一个 RC 里有多个 RP，每条链路从一个 RP 开始，对端是 Endpoint。一行里写 RP 编号、速率、参考钟来源、复位负责人、插损归属、功耗档位、故障后的动作，再加上 1.2 的单向 GB/s。前七项来自 3.2", "单向 GB/s 来自 3.2，复位负责人来自 1.2。八项可以拆到不同文件", "Switch 的下游口也叫 Root Port，所以 RP 编号可以不写"], "ans": 1, "why": "【答案】B。系统工程师要规定拓扑、带宽是否匹配数据流、功耗账、固件对每个 RP 的拆分，以及错误后重训练还是停机。单卡不超过 SENSE 声明值。超过 75 W 的卡按停机更换。主机 PCIe、加速器互连和光模块通道的损耗、时钟、供电分开记账：28 GHz 的 30 dB 不是 16 GHz 的主机 PCIe，光模块主机通道是 100 Ω，奈奎斯特按该以太网速率。\n【易错】A 把 RC 和 RP 说成一一对应。C 把八项的出处对调，又拆开了笔记要求放在同一行的字段。D 把 Switch 下游当成 Root Port。笔记里 Switch 是 RP 不够时用的，上游对 RP，下游对 GPU 或网卡。"}, {"ch": "服务器", "src": "至强 CPU Max、D-1548", "stem": "至强 CPU Max 五颗和 D-1548，哪一栏可以同时写进功耗账？", "opts": ["Max 五颗 TDP 都是 350 W，最大睿频都是 3.50 GHz，线程是核数的 2 倍，HBM 都是 64 GB（四叠 HBM2e），PCIe 5.0 最多 80 路，8 通道 DDR5，插座 FCLGA4677，双路。D-1548 是 8 核 16 线程、TDP 45 W、没有 HBM、PCIe 2.0/3.0 最多 32 路、仅单路", "Max 9480 是 350 W，其余四颗按核数比例降 TDP。HBM 只在 9480 上有 64 GB", "80 路 PCIe 5.0 可以切成 8 条 x16。D-1548 也是双路，内存最大 4 TB", "没有插 DDR 时 Max 进入 Cache 模式；插了 DDR 才有 HBM-only"], "ans": 0, "why": "【答案】A。双路两颗 Max 按 700 W 计，后面还要加 GPU、网卡、风扇和损耗。80 路按 x16 切开最多 5 条，32 路最多 2 条，网卡还要从这些路里扣。没有 DDR 时是 HBM-only；Flat（1LM）把 HBM 和 DDR 分成两块地址空间；Cache（2LM）里程序只看见 DDR，HBM 做缓存。\n【易错】B 把五颗的 TDP 和 HBM 说成只有顶配才有。C 把 80/16 算成 8 条，又把 D-1548 的路数和内存上限说成 Max。D 把三种内存模式的入口说反了。"}, {"ch": "服务器", "src": "至强 6+", "stem": "至强 6+ 的 6990E+ 和另外三颗，哪一项不能从邻行抄？", "opts": ["6990E+ 是 288 个 P-core，线程按核数的 2 倍，TDP 350 W，带 64 GB HBM", "四颗都是 E-core，线程等于核数。6990E+ 为 288 核、TDP 450 W，双路按 900 W 计，这还没加 GPU。6980E+ 这次打开的德文页没有印 PCIe 条数，不把另外三颗的 96 条抄过去", "6980E+ 的德文规格页虽然没印 PCIe，仍应按 96 条、和 6990E+ 相同来画底板", "6990E+ 的线程是 576，因为 E-core 也有超线程"], "ans": 1, "why": "【答案】B。6960E+、6970E+、6990E+ 的规格页写 PCIe 5.0、96 条，DDR5-8000、12 通道、最大 1.5 TB。6980E+ 的核、缓存、TDP 和内存档与这个系列对齐，但 PCIe 条数那一页没有印。插座是 FCLGA7529。Max 是 P-core、8 通道、带 HBM；6+ 这四颗没有那一栏 HBM。\n【易错】A 把 Max 的 P-core、350 W 和 HBM 抄到了 6990E+。C 正是笔记禁止的抄法。D 把 E-core“线程等于核数”说成了超线程。"}, {"ch": "服务器", "src": "4.11 I2C", "stem": "一条 I2C 或 SMBus 能挂多少器件？", "opts": ["硬上限是 20 颗。超过就换地址，电容可以不加核算", "不按颗数封顶。标准模式和快速模式每条线 400 pF，Fm+ 在 UM10204 里是 550 pF。大约 20 颗是 AN10216 对 400 pF 的规划，不是另一条硬上限。7 位地址 128 个码，保留之后剩 112 个。Orin 的设计指南连 Fm+ 也写成 400 pF，比 550 pF 更紧", "SMBus 插卡举例的两颗 10 pF 器件，就是整条总线的器件上限", "地址重复时用缓冲器把它们分到不同支路；电容超了就用切换器把同一段加长"], "ans": 1, "why": "【答案】B。管脚、走线和连接器都算进电容。超过 400 pF 时，用缓冲器或集线器把总线切成多段，每一段重新按 400 pF 算。切换器用来把相同地址分到不同支路，主设备一次只能选中一路。SMBus 3.2 的插卡举例是两颗 10 pF 器件，槽上的 SMBus 还要和主板、其他槽合在同一段里。\n【易错】A 把规划颗数当成硬上限。C 把一张卡上的举例当成整机上限。D 把缓冲器和切换器的作用对调了。"}, {"ch": "服务器", "src": "4.11 SiTime、BMC", "stem": "SiT9501 的抖动和两颗 BMC，哪一种比较没有用错条件？", "opts": ["SiT9501 面向 SerDes 的相位抖动典型 45 fs RMS，不能直接当成 CEM 那项 200 fs RMS Rj 测试已经通过。AST2600 是双核 Cortex-A7、最高 1.2 GHz，DDR4 1600、16 bit，28 nm，手册里的 PCIe 是 2.0 x1。AST2700 是四核 Cortex-A35、1.6 GHz，DDR5 3200、16 bit，12 nm；产品页写 Native PCIe Gen4，这一页没有印 lane 数", "45 fs 小于 200 fs，所以这颗晶振不用再对参考钟模板", "AST2600 的 PCIe 是 Gen4 x16。AST2700 的 lane 数就按 AST2600 的 1 lane 抄", "SiT95141、SiT95145、SiT95147 的产品页相位抖动都是 45 fs，和 SiT9501 相同"], "ans": 0, "why": "【答案】A。参考钟仍是 100 MHz HCSL。做哪一项抖动测试就用哪一个数，笔记不另写一套飞秒。SiT95141/145/147 的产品页相位抖动是 120 fs RMS。AST2600 的 I3C 用来接主机内存上的器件，AVL 里点过 DDR5 SPD Hub SPD5118。AST2700 产品页没有印的 lane 数不要补。\n【易错】B 用一个更小的典型值代替另一套测试条件。C 把两代 PCIe 写反，又去补笔记没印的 lane 数。D 把发生器的 120 fs 说成晶振的 45 fs。"}, {"ch": "封装", "src": "4.14、4.16", "stem": "基板 pinmap 的顺序和球号规则，哪一种符合笔记？", "opts": ["先把球号填满，再回头补功能名。字母 I、O、Q 照常用。缺球就把后面的号跳过", "0.5 mm 节距在过孔之间走 1 到 2 根线，表层用狗骨。1.0 mm 必须用盘中孔", "信号约占 60%、电源和地约占 40%，这是 GPU 的硬规定。HBM 的 DQ 排在基板 ball map 的外圈", "管脚定义先于球号。顶视 A1 在左上，字母不用 I、O、Q、S、X、Z，缺球不跳号。核电源在裸片正下方，存储按通道和字节，SerDes 朝向连接器。0.5 mm 用盘中孔。带 HBM 时 DQ 在中介层或扇出 RDL 上。改一个球，符号、封装图、PCB 扇出、测试座和探针卡一起改"], "ans": 3, "why": "【答案】D。1.0 / 0.92 / 0.8 mm 可以在过孔之间走线，表层用狗骨。60/40 只是 AMD UG1099 对 FPGA 和自适应 SoC 的扇出估算，GPU 的电源球数按电流和基板厂规则定。RSVD 是预留功能，NC 是封装内部无连接，两种都保留球号。叠层记号例如 4-2-4。味之素 ABF 的公开 Dk/Df 有一份在 5.8 GHz，PCIe 的 16 GHz 要用该材料在 16 GHz 的曲线。\n【易错】A 把定义和球号的先后、缺球规则都说反了。B 把粗节距和细节距的扇出对调。C 把 FPGA 估算当成 GPU 硬规定，又把 HBM 的 DQ 放到了板上能扇出的球上。"}, {"ch": "封装", "src": "4.19、4.1", "stem": "EVB 点亮的前两项，以及高速线和电子负载，怎么做才算按顺序？", "opts": ["先上电看枚举，再补对地电阻。爬升时 PERST# 可以松开。差分对上焊测试点，方便点探头", "第 1 项是未上电的每路电源对地电阻，排除短路，电源先限流。第 2 项在采样点看爬升，此阶段 PERST# 保持为低。高速差分对不焊测试点。眼图和 AER、重放计数留在同一轮。Chroma 的斜率是仪器上限，芯片交流窗口的幅度和上升时间用芯片手册", "63206A-60-1000 在 1000 A 档能到 20 A/µs，所以采样点阶跃就按 20 A/µs 签", "JTAG 的 IDCODE 读出来即可，不必和这颗芯片对照。扫描链能移位就等于眼图通过"], "ans": 1, "why": "【答案】B。顺序表从阻抗、爬升、空载纹波、负载阶跃、参考钟、复位，一直排到长时间运行。前一项没有记录，不进入下一项。63206A-60-1000 的动态斜率：100 A 档 1 mA/µs 到 2 A/µs，500 A 档到 10 A/µs，1000 A 档到 20 A/µs。仪器能编程的斜率不是采样点上一定走得到的速度。\n【易错】A 把上电放在短路检查前面，又在高速线上加了测试点。C 用仪器最大斜率代替芯片手册。D 把 IDCODE 和眼图的合格线放宽了。"}, {"ch": "封装", "src": "4.20", "stem": "θJA、θJC、ΨJT 里，哪一个数不能拿来当服务器的设计目标？", "opts": ["θJA 是静止空气、1 立方英尺箱里的 (Tj − Ta) / P，用来比较封装。服务器的边界是进风温度或冷却液入口。ΨJT 用顶面温度估计结温，热量还能从侧面和底板走，所以它不是热阻", "θJA 就是机箱热设计的目标热阻，进风温度不用再写", "ΨJT 等于 θJC，冷板只要满足 ΨJT 就关闭了结温", "顶面热电偶放在封装边角。线径用大于 36 AWG 的线，读数更稳"], "ans": 0, "why": "【答案】A。θJC 是裸片到壳，测法按 JESD51-14。热电偶按 JESD51-2A 放在几何中心，线径不超过 36 AWG，T 型用 40 AWG，并和片上传感器放在同一次满负载记录里。功率级损耗是 P(1/η − 1)，进散热器。热点按功耗图，不按面积平均。\n【易错】B 把比较用的静止空气热阻当成了服务器目标。C 把 ΨJT 当成热阻去设计冷板。D 把热电偶的位置和线径都说反了。"}, {"ch": "封装", "src": "容易漏掉的工艺和测试、4.18", "stem": "量产和首件里，哪一组检查对得上笔记？", "opts": ["BGA 空洞面积按一个写死的百分比接收。扫描通过之后，PCIe 和内存不必再看协议或误码", "首件只要叠层表上的名义残桩合格，就可以不切片。采样接到最高的球，用来把整组球拉进窗口", "首件有三件事对不上仿真就不放量：阻抗条、一条通道的 S 参数、采样点阶跃。IEEE 1149.1 覆盖直流脚，交流耦合差分对用 1149.6，扫描通过不等于眼图通过。潮敏按 J-STD-020 分级、J-STD-033 管暴露时间。大尺寸 MLCC 离开板边、安装孔和连接器，易弯处用软端电极", "老化日志写到整机即可，不可纠正错误不必对应到槽位或通道"], "ans": 2, "why": "【答案】C。空洞百分比用该产品采用的 IPC-A-610，设计和组装过程用 IPC-7095，笔记不写死一个比例。背钻残桩在首件切片里看，不靠叠层名义值代替。固件、FRU 和 SPD 速率先对发放清单。DDR5 训练前要读到 SPD，并且 PMIC 报电源好。\n【易错】A 发明了空洞比例，又用扫描代替眼图。B 跳过了切片，采样点还接到了会把其他球拉出规格的位置。D 让不可纠正错误对不上那一条内存或那一颗 GPU。"}, {"ch": "服务器", "src": "4.12 光模块", "stem": "光模块上电和 800 Gb/s 电口，哪一种接法符合笔记？", "opts": ["SFP+ 上电就可以进 II 档 1.5 W。QSFP28 的 5 到 7 档不必等主机允许，就可以超过 3.5 W", "QSFP-DD 把 LPMode 拉高时，模块应直接进入 14 W。800 Gb/s 电口是 4 路 53.125 GBd 的 NRZ", "主机先读功耗等级，再允许进入高功耗。SFP+、SFP28 上电先不超过 1.0 W，主机经两线接口允许后才进 II 档 1.5 W。QSFP28 的 5 到 7 档要把 High_Power_Class_Enable 置 1，才能超过 3.5 W。QSFP-DD 在 LPMode 拉高时停在低功耗 1.5 W。800 Gb/s 是 8×106.25 Gb/s PAM4，符号率 53.125 GBd", "光模块差分阻抗用 PCIe 的 85 Ω。奈奎斯特按线速率本身，不除以 2"], "ans": 2, "why": "【答案】C。光模块的 3.3 V 由卡上的变换器从 12 V 供给，金手指上的 3.3 V 留给边带。主机通道差分 100 Ω，高速线在模块内交流耦合。NRZ 的奈奎斯特是线速率的一半，PAM4 的奈奎斯特是符号率的一半：10.3125 Gb/s NRZ 为 5.156 GHz，53.125 GBd PAM4 为 26.563 GHz。400GBASE-DR4 可以拆成 4 路 100G，拆开之后每路线速率不变。\n【易错】A 跳过了主机允许。B 把 LPMode 的低功耗电平和 800G 的调制都说反了。D 用了 PCIe 阻抗，又把奈奎斯特的除法漏掉。"}];
+const KIND = "wx";
+const LETTERS = ["A","B","C","D"];
+const KEY = "gpuhw1-" + KIND;
+const $ = (id) => document.getElementById(id);
+const state = { phase: "home", mode: "practice", chapter: "全部", shuffle: false, order: [], i: 0, picks: {}, revealed: false };
+
+function chapters() {
+  const list = ["全部"];
+  BANK.forEach((q) => { if (list.indexOf(q.ch) < 0) list.push(q.ch); });
+  return list;
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return;
+    const old = JSON.parse(raw);
+    if (old && old.phase === "quiz" && old.order && old.order.length) {
+      Object.assign(state, old);
+    }
+  } catch (e) {}
+}
+function esc(s) {
+  return String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+}
+function pool() {
+  return BANK.map((q, i) => i).filter((i) => state.chapter === "全部" || BANK[i].ch === state.chapter);
+}
+function start(fresh) {
+  const ids = pool();
+  state.order = state.shuffle ? ids.slice().sort(() => Math.random() - 0.5) : ids;
+  state.i = 0;
+  state.picks = {};
+  state.revealed = false;
+  state.phase = "quiz";
+  if (!fresh && state.order.length === 0) return;
+  save();
+  render();
+}
+function current() { return BANK[state.order[state.i]]; }
+function picked(idx) { return state.picks[String(idx)]; }
+function locked(idx) {
+  if (state.mode === "exam") return !!state.revealed;
+  return picked(idx) !== undefined;
+}
+function choose(opt) {
+  const idx = state.order[state.i];
+  if (locked(idx)) return;
+  state.picks[String(idx)] = opt;
+  save();
+  render();
+}
+function move(step) {
+  const n = state.order.length;
+  state.i = Math.max(0, Math.min(n - 1, state.i + step));
+  save();
+  render();
+}
+function finish() {
+  state.revealed = true;
+  state.phase = "result";
+  save();
+  render();
+}
+function scoreOf(ids) {
+  let right = 0, answered = 0;
+  ids.forEach((idx) => {
+    const p = picked(idx);
+    if (p === undefined) return;
+    answered += 1;
+    if (p === BANK[idx].ans) right += 1;
+  });
+  return { right, answered, total: ids.length };
+}
+function renderHome() {
+  $("bar").classList.add("hide");
+  $("dock").classList.add("hide");
+  const chips = chapters().map((ch) =>
+    '<button class="chip' + (state.chapter === ch ? " on" : "") + '" data-ch="' + esc(ch) + '">' + esc(ch) + '</button>'
+  ).join("");
+  const wx = KIND === "wx";
+  const open = wx
+    ? "用手机浏览器打开本页即可点选，换任何网络、断网都能做。练习模式点完立刻出对错和解析。"
+    : "在电脑浏览器里点选项，或按键盘 1 到 4 选择。练习模式点完立刻出解析。";
+  const qr = wx
+    ? ""
+    : '<div class="card" style="margin-top:12px"><div class="kicker">手机浏览器，任意网络</div><p class="lead">把「GPU硬件测试题-微信.html」发到手机，用手机自带浏览器打开。题目都在这一个文件里，不需要和电脑连同一个 Wi-Fi，也不需要上网。</p><p class="note">微信里收到文件后，点「用其他应用打开」或「用浏览器打开」，选 Chrome、Safari 或手机自带浏览器。微信自己的文件预览不会把选项变成可以点的按钮。</p></div>';
+  $("main").innerHTML =
+    '<div class="card"><div class="kicker">三年模拟 · 单选</div><h1>GPU 硬件 1</h1><p class="lead">' + open + ' 题干、干扰项和解析只使用笔记里写明的数。共 ' + BANK.length + ' 题。</p>' +
+    '<div class="kicker" style="margin-top:12px">范围</div><div class="chips" id="chips">' + chips + '</div>' +
+    '<div class="modes"><button class="mode' + (state.mode === "practice" ? " on" : "") + '" data-mode="practice"><b>练习</b><small>点选后立刻看对错和解析</small></button>' +
+    '<button class="mode' + (state.mode === "exam" ? " on" : "") + '" data-mode="exam"><b>自测</b><small>先点选，交卷后统一看解析</small></button></div>' +
+    '<label class="row"><input id="shuffle" type="checkbox"' + (state.shuffle ? " checked" : "") + '> 打乱题目顺序</label>' +
+    '<div class="dock" style="padding:0;background:transparent;border:0"><button class="go" id="begin">开始做题</button></div></div>' + qr;
+  $("chips").onclick = (e) => {
+    const b = e.target.closest("[data-ch]");
+    if (!b) return;
+    state.chapter = b.getAttribute("data-ch");
+    render();
+  };
+  document.querySelectorAll("[data-mode]").forEach((b) => {
+    b.onclick = () => { state.mode = b.getAttribute("data-mode"); render(); };
+  });
+  $("shuffle").onchange = (e) => { state.shuffle = e.target.checked; };
+  $("begin").onclick = () => start(true);
+}
+function renderQuiz() {
+  $("bar").classList.remove("hide");
+  $("dock").classList.remove("hide");
+  const idx = state.order[state.i];
+  const q = BANK[idx];
+  const n = state.order.length;
+  const p = picked(idx);
+  const show = state.mode === "practice" ? p !== undefined : state.revealed;
+  $("bari").style.width = ((state.i + (show ? 1 : 0)) / n * 100) + "%";
+  const opts = q.opts.map((text, k) => {
+    let cls = "opt";
+    if (p === k && !show) cls += " picked";
+    if (show && k === q.ans) cls += " good";
+    if (show && p === k && k !== q.ans) cls += " bad";
+    return '<button class="' + cls + '" data-k="' + k + '"' + (locked(idx) ? " disabled" : "") + '><span class="L">' + LETTERS[k] + '</span>' + esc(text) + '</button>';
+  }).join("");
+  const explain = show
+    ? '<div class="explain"><h3>解析 · ' + esc(q.src) + '</h3>' + esc(q.why) + '</div>'
+    : "";
+  $("main").innerHTML =
+    '<div class="card"><div class="meta"><span>第 ' + (state.i + 1) + ' / ' + n + ' 题</span><span>' + esc(q.ch) + ' · ' + (state.mode === "practice" ? "练习" : "自测") + '</span></div>' +
+    '<p class="stem">' + (state.i + 1) + '. ' + esc(q.stem) + '</p>' + opts + explain + '</div>';
+  $("main").querySelectorAll(".opt").forEach((b) => {
+    b.onclick = () => choose(Number(b.getAttribute("data-k")));
+  });
+  const last = state.i === n - 1;
+  const nextLabel = state.mode === "exam" && last ? "交卷" : (last && show ? "看成绩" : "下一题");
+  $("dock").innerHTML =
+    '<button class="ghost" id="prev">上一题</button>' +
+    (state.mode === "exam" ? '<button class="ghost" id="hand">交卷</button>' : "") +
+    '<button class="go" id="next">' + nextLabel + '</button>';
+  $("prev").onclick = () => move(-1);
+  $("next").onclick = () => {
+    if (state.mode === "exam" && last) finish();
+    else if (last && show) finish();
+    else move(1);
+  };
+  const hand = $("hand");
+  if (hand) hand.onclick = finish;
+  $("main").scrollTop = 0;
+}
+function renderResult() {
+  $("bar").classList.add("hide");
+  const ids = state.order;
+  const s = scoreOf(ids);
+  const wrong = ids.filter((idx) => picked(idx) !== BANK[idx].ans);
+  const blocks = wrong.map((idx) => {
+    const q = BANK[idx];
+    const p = picked(idx);
+    const yours = p === undefined ? "未作答" : LETTERS[p];
+    return '<div class="item"><p><b>第 ' + (ids.indexOf(idx) + 1) + ' 题 · ' + esc(q.ch) + '</b></p><p>' + esc(q.stem) + '</p><p>你的选择 ' + yours + '，正确答案 ' + LETTERS[q.ans] + '</p><div class="explain"><h3>解析 · ' + esc(q.src) + '</h3>' + esc(q.why) + '</div></div>';
+  }).join("");
+  $("main").innerHTML =
+    '<div class="card"><div class="kicker">成绩</div><div class="score">' + s.right + '<small> / ' + s.total + '</small></div><p class="lead">答对 ' + s.right + ' 题，未作答 ' + (s.total - s.answered) + ' 题。下面是错题和未作答，解析按笔记对照。</p></div>' +
+    '<div class="card" style="margin-top:12px">' + (blocks || '<p class="lead">这一卷没有错题。</p>') + '</div>';
+  $("dock").classList.remove("hide");
+  $("dock").innerHTML = '<button class="ghost" id="redo">重做全部</button><button class="go" id="wrong">只做错题</button><button class="ghost" id="home">回目录</button>';
+  $("redo").onclick = () => start(true);
+  $("home").onclick = () => { state.phase = "home"; save(); render(); };
+  $("wrong").onclick = () => {
+    if (!wrong.length) { start(true); return; }
+    state.order = wrong;
+    state.i = 0;
+    state.picks = {};
+    state.revealed = false;
+    state.phase = "quiz";
+    state.mode = "practice";
+    save();
+    render();
+  };
+}
+function render() {
+  if (state.phase === "quiz") renderQuiz();
+  else if (state.phase === "result") renderResult();
+  else renderHome();
+}
+document.addEventListener("touchstart", function () {}, { passive: true });
+document.addEventListener("keydown", (e) => {
+  if (state.phase !== "quiz" || KIND !== "pc") return;
+  if (e.key >= "1" && e.key <= "4") choose(Number(e.key) - 1);
+  if (e.key === "ArrowRight") $("next") && $("next").click();
+  if (e.key === "ArrowLeft") move(-1);
+});
+function wxFont() {
+  function lock() {
+    try {
+      WeixinJSBridge.invoke("setFontSizeCallback", { fontSize: 0 });
+      WeixinJSBridge.on("menu:setfont", function () {
+        WeixinJSBridge.invoke("setFontSizeCallback", { fontSize: 0 });
+      });
+    } catch (err) {}
+  }
+  if (typeof WeixinJSBridge === "object" && WeixinJSBridge.invoke) lock();
+  else document.addEventListener("WeixinJSBridgeReady", lock, false);
+}
+if (KIND === "wx") wxFont();
+load();
+render();
+</script>
+</body>
+</html>
