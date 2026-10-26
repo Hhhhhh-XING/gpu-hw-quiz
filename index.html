@@ -144,7 +144,7 @@ body.wx .opt { font-size: 17px; min-height: 56px; }
 <div class="app">
   <header class="top">
     <b>GPU 硬件模拟题</b>
-    <span id="sub">手机浏览器打开 · 任意网络都能点选</span>
+    <span id="sub">直接点选项 · 点完看解析</span>
   </header>
   <div class="progress" id="bar"><i id="bari"></i></div>
   <main class="main" id="main"></main>
@@ -236,11 +236,11 @@ function renderHome() {
   ).join("");
   const wx = KIND === "wx";
   const open = wx
-    ? "用手机浏览器打开本页即可点选，换任何网络、断网都能做。练习模式点完立刻出对错和解析。"
+    ? "打开这个页面后，直接点选项。练习模式点完立刻出对错和解析。换网络也能做。"
     : "在电脑浏览器里点选项，或按键盘 1 到 4 选择。练习模式点完立刻出解析。";
   const qr = wx
     ? ""
-    : '<div class="card" style="margin-top:12px"><div class="kicker">手机浏览器，任意网络</div><p class="lead">把「GPU硬件测试题-微信.html」发到手机，用手机自带浏览器打开。题目都在这一个文件里，不需要和电脑连同一个 Wi-Fi，也不需要上网。</p><p class="note">微信里收到文件后，点「用其他应用打开」或「用浏览器打开」，选 Chrome、Safari 或手机自带浏览器。微信自己的文件预览不会把选项变成可以点的按钮。</p></div>';
+    : '<div class="card" style="margin-top:12px"><div class="kicker">微信里点选</div><p class="lead">不要发 html 文件。把这个链接发到微信，点蓝色链接即可做题：https://hhhhhh-xing.github.io/gpu-hw-quiz/</p><p class="note">微信没有「用浏览器打开」。点链接后若出现「继续访问」，点一下，然后直接点选项。</p></div>';
   $("main").innerHTML =
     '<div class="card"><div class="kicker">三年模拟 · 单选</div><h1>GPU 硬件 1</h1><p class="lead">' + open + ' 题干、干扰项和解析只使用笔记里写明的数。共 ' + BANK.length + ' 题。</p>' +
     '<div class="kicker" style="margin-top:12px">范围</div><div class="chips" id="chips">' + chips + '</div>' +
